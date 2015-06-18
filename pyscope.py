@@ -2,6 +2,7 @@
 #---change log
 #---date                author          descption
 #---2015-06-18 17:58    harry.zhang     use QtCore.QTimer replace threding.Timer
+#---2015-06-19 01:15    harry.zhang     Just test git
 from PyQt4 import QtCore, QtGui
 import random,math
 
@@ -69,7 +70,7 @@ class PyScope(QtGui.QWidget):
         painter.setPen(QtGui.QPen(self.triggerColor))
         painter.drawConvexPolygon(self.CreateTriggerPoly(3,100))
         
-        painter.drawText(QtCore.QPoint(10,self.width()-20),QtCore.QString("T"))
+        painter.drawText(QtCore.QPoint(10,self.width()-20),QtCore.QString("Test"))
         painter.restore()
 
         #---draw grid

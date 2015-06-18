@@ -1,7 +1,9 @@
 #!/usr/bin/env python
-#---2015-06-18 17:58
+#---change log
+#---date                author          descption
+#---2015-06-18 17:58    harry.zhang     use QtCore.QTimer replace threding.Timer
 from PyQt4 import QtCore, QtGui
-import random,threading,math
+import random,math
 
 
 class PyScope(QtGui.QWidget):
@@ -10,15 +12,16 @@ class PyScope(QtGui.QWidget):
         self.setWindowTitle(QtCore.QObject.tr(self, "Scope"))
         self.resize(800, 400)
         self.signalColor = QtGui.QColor(0, 250, 0)
-        self.gridColor = QtGui.QColor(0, 80, 0, 250)
-        self.centergridColor = QtGui.QColor(0, 40, 0, 250)
-        self.outlierColor = QtGui.QColor(0, 50, 0, 250)
-        self.triggerColor = QtGui.QColor(150, 150, 0, 250)
+        self.gridColor = QtGui.QColor(0, 100, 0, 250)
+        self.centergridColor = QtGui.QColor(0, 60, 0, 250)
+        self.outlierColor = QtGui.QColor(0, 80, 0, 250)
+        self.triggerColor = QtGui.QColor(180, 180, 0, 250)
         self.a=[]
         for i in range(0,20):
             self.a.append (math.sin(math.pi*i/20.0))
-        self.t = threading.Timer(0.02,self.TimerISR)
-        self.t.start()
+        self.timer1 = QtCore.QTimer()
+        self.timer1.timeout.connect(self.TimerISR)
+        self.timer1.start(100)
         self.isExit = False
         #--config params
         self.screen_hgrid_num = 16
@@ -123,23 +126,21 @@ class PyScope(QtGui.QWidget):
         painter.end()
     def keyReleaseEvent (self, ev):
         if ev.key() == QtCore.Qt.Key_Escape:
+            self.timer1.stop()
             self.close()
         print 'key press:%d' % ev.key()
     def TimerISR(self):
         print "hello"
-        if len(self.a) > 50:
+        if len(self.a) > 80:
             del self.a[0]
         self.a.append(random.random())
         self.repaint()
         if self.isExit == True:
             return
-        self.t = threading.Timer(2,self.TimerISR)
-        self.t.start()
     def closeEvent(self, ev):
         self.isExit = True
         
 if __name__ == "__main__":
-
     import sys
 
     app = QtGui.QApplication(sys.argv)

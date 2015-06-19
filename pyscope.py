@@ -3,33 +3,89 @@
 #---date                author          descption
 #---2015-06-18 17:58    harry.zhang     use QtCore.QTimer replace threding.Timer
 #---2015-06-19 01:15    harry.zhang     Just test git
+#---2015-06-19 01:15    zp8613          adjust hor lens
+#---2015-06-20 00:50    harry.zhang     Add PyScopeUI class
 from PyQt4 import QtCore, QtGui
 import random,math
 
+class PyScopeUI(QtGui.QWidget):
+    def __init__(self, parent=None):
+        super(PyScopeUI, self).__init__(parent)
+        self.setWindowTitle(QtCore.QObject.tr(self, "Scope"))
+        layout = QtGui.QGridLayout()
+        layoutBtn = QtGui.QVBoxLayout()
+        self.VerticalGroupBox = QtGui.QGroupBox("vertical layout")
+
+        self.pyscope = PyScope()
+        self.startBtn = QtGui.QPushButton("start")
+        self.startBtn.clicked.connect(self.funcBtnStart)
+        self.closeBtn = QtGui.QPushButton("close")
+        self.closeBtn.clicked.connect(self.funcBtnClose)
+        self.colorBtn = QtGui.QPushButton("color")
+        self.colorBtn.clicked.connect(self.funcBtnColor)
+
+        layoutBtn.addWidget( self.startBtn)
+        layoutBtn.addWidget( self.closeBtn)
+        layoutBtn.addWidget( self.colorBtn)
+
+        self.VerticalGroupBox.setLayout(layoutBtn)
+
+        layout.addWidget(self.pyscope,0,0)
+        layout.addWidget(self.VerticalGroupBox,0,1)
+        self.setLayout(layout)
+    def funcBtnStart (self):
+        self.pyscope.StarRefresh()
+    def funcBtnColor(self):
+        c = QtGui.QColorDialog.getColor()
+        if c.isValid():
+            self.pyscope.signalColor = c
+    def funcBtnClose(self):
+        self.close()
+    def keyReleaseEvent (self, ev):
+        if ev.key() == QtCore.Qt.Key_Escape:
+            self.close()
+        print 'key press:%d' % ev.key()
 
 class PyScope(QtGui.QWidget):
     def __init__(self, parent=None):
         super(PyScope, self).__init__(parent)
         self.setWindowTitle(QtCore.QObject.tr(self, "Scope"))
+        self.setFixedSize(800,400)
         self.resize(800, 400)
-        self.signalColor = QtGui.QColor(0, 250, 0)
+        self.signalColor = QtGui.QColor(200, 50, 0)
         self.gridColor = QtGui.QColor(0, 100, 0, 250)
         self.centergridColor = QtGui.QColor(0, 60, 0, 250)
         self.outlierColor = QtGui.QColor(0, 80, 0, 250)
         self.triggerColor = QtGui.QColor(180, 180, 0, 250)
         self.a=[]
-        for i in range(0,20):
-            self.a.append (math.sin(math.pi*i/20.0))
-        self.timer1 = QtCore.QTimer()
-        self.timer1.timeout.connect(self.TimerISR)
-        self.timer1.start(100)
-        self.isExit = False
+        for i in range(0,200):
+            self.a.append (math.sin(2*math.pi*i/300.0)*0.5+0.5)
+        for i in range(0,200):
+            self.a.append ((i%50)/50.0)
+        for i in range(0,200):
+            self.a.append (0.2 if (((i/20)%2)==1) else 0.8)
         #--config params
         self.screen_hgrid_num = 16
         self.screen_vgrid_num = 8
         self.screen_outblank = 20
+        #----screen time window ms
+        self.screen_time_window = 1000
+        #---screen refresh time ms
+        self.screen_refresh_time = 20
+        #---data sample time ms
+        self.screen_sample_time = 2
         
         print 'height:%d  width:%d' % (self.height(),self.width())
+    def StarRefresh(self):
+        #--config timer 1
+        self.timer1 = QtCore.QTimer()
+        self.timer1.timeout.connect(self.TimerISR)
+        self.timer1.start(100)
+        #--config timer refresh
+        self.timer_refresh = QtCore.QTimer()
+        self.timer_refresh.timeout.connect(self.RefreshTimerISR)
+        self.timer_refresh.start(20)
+
     def CreateTriggerPoly(self, x, y):
         a = QtGui.QPolygon([
             QtCore.QPoint(x,y),
@@ -114,38 +170,32 @@ class PyScope(QtGui.QWidget):
         painter.drawLine( self.src_x, y_point, self.src_x + self.src_wid, y_point )
         painter.restore()
 
-
         #---draw signal
         pen = QtGui.QPen(self.signalColor)
         pen.setWidth(1)
         painter.setPen(pen)
         for j in range(0,len(self.a)-1):
             #print self.a[j]
-            painter.drawLine(self.src_x + j*10, self.src_y - self.a[j] * self.src_hei,
-                    self.src_x + (j+1)*10, self.src_y - self.src_hei * self.a[j+1])
+            painter.drawLine(self.src_x + j, self.src_y - self.a[j] * self.src_hei,
+                    self.src_x + (j+1), self.src_y - self.src_hei * self.a[j+1])
         #--end paint
         painter.end()
-    def keyReleaseEvent (self, ev):
-        if ev.key() == QtCore.Qt.Key_Escape:
-            self.timer1.stop()
-            self.close()
-        print 'key press:%d' % ev.key()
     def TimerISR(self):
         print "hello"
-        if len(self.a) > 80:
+        if len(self.a) > self.src_wid:
             del self.a[0]
         self.a.append(random.random())
-        self.repaint()
-        if self.isExit == True:
-            return
-    def closeEvent(self, ev):
-        self.isExit = True
         
+    def RefreshTimerISR(self):
+        self.repaint()
+    def close(self):
+        self.timer1.stop()
+        self.timer_refresh.stop()
 if __name__ == "__main__":
     import sys
 
     app = QtGui.QApplication(sys.argv)
-    clock = PyScope()
+    clock = PyScopeUI()
     clock.show()
     sys.exit(app.exec_())
 

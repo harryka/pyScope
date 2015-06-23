@@ -5,6 +5,7 @@
 #---2015-06-19 01:15    harry.zhang     Just test git
 #---2015-06-19 01:15    zp8613          adjust hor lens
 #---2015-06-20 00:50    harry.zhang     Add PyScopeUI class
+#---2015-06-24 00:01    harry.zhang     Add Slider to control trigger level
 from PyQt4 import QtCore, QtGui
 import random,math
 
@@ -23,16 +24,24 @@ class PyScopeUI(QtGui.QWidget):
         self.closeBtn.clicked.connect(self.funcBtnClose)
         self.colorBtn = QtGui.QPushButton("color")
         self.colorBtn.clicked.connect(self.funcBtnColor)
+        self.triggerSlider = QtGui.QSlider(QtCore.Qt.Horizontal)
+        self.triggerSlider.setRange(0,100)
+        self.triggerSlider.valueChanged.connect(self.funcSliderTrigger)
 
         layoutBtn.addWidget( self.startBtn)
         layoutBtn.addWidget( self.closeBtn)
         layoutBtn.addWidget( self.colorBtn)
+        layoutBtn.addWidget( self.triggerSlider)
 
         self.VerticalGroupBox.setLayout(layoutBtn)
 
         layout.addWidget(self.pyscope,0,0)
         layout.addWidget(self.VerticalGroupBox,0,1)
         self.setLayout(layout)
+    def funcSliderTrigger(self,val):
+        print 'slider val:%d' % val
+        self.pyscope.triggerLevel = val
+        self.pyscope.repaint()
     def funcBtnStart (self):
         self.pyscope.StarRefresh()
     def funcBtnColor(self):
@@ -57,6 +66,7 @@ class PyScope(QtGui.QWidget):
         self.centergridColor = QtGui.QColor(0, 60, 0, 250)
         self.outlierColor = QtGui.QColor(0, 80, 0, 250)
         self.triggerColor = QtGui.QColor(180, 180, 0, 250)
+        self.triggerLevel = 0
         self.a=[]
         for i in range(0,200):
             self.a.append (math.sin(2*math.pi*i/300.0)*0.5+0.5)
@@ -122,11 +132,11 @@ class PyScope(QtGui.QWidget):
         #---draw trigger point        
         
         painter.save()
-        painter.setBrush(QtGui.QBrush(self.triggerColor))
-        painter.setPen(QtGui.QPen(self.triggerColor))
-        painter.drawConvexPolygon(self.CreateTriggerPoly(3,100))
+        painter.setBrush( QtGui.QBrush( self.triggerColor))
+        painter.setPen( QtGui.QPen( self.triggerColor))
+        painter.drawConvexPolygon( self.CreateTriggerPoly( 3, self.src_y - self.src_hei*self.triggerLevel/100-5))
         
-        painter.drawText(QtCore.QPoint(10,self.width()-20),QtCore.QString("Test"))
+        painter.drawText(QtCore.QPoint( 10, self.width()-20), QtCore.QString("Test"))
         painter.restore()
 
         #---draw grid

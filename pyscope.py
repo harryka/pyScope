@@ -6,6 +6,7 @@
 #---2015-06-19 01:15    zp8613          adjust hor lens
 #---2015-06-20 00:50    harry.zhang     Add PyScopeUI class
 #---2015-06-24 00:01    harry.zhang     Add Slider to control trigger level
+#---2016-01-21 17:58    zp8613			Add worker thread to read stdin
 from PyQt4 import QtCore, QtGui
 import random,math
 
@@ -84,17 +85,28 @@ class PyScope(QtGui.QWidget):
         self.screen_refresh_time = 20
         #---data sample time ms
         self.screen_sample_time = 2
-        
+        #---open stdin pipe
+        self.workerth=Worker()
+        self.connect(self.workerth,QtCore.SIGNAL('output(QString)'),self.ReadStdinSlot)
         print 'height:%d  width:%d' % (self.height(),self.width())
+        self.workerth.start()
+    def ReadStdinSlot(self,stdindata):
+        print "ReadStdinSlot"
+        if len(self.a) > self.src_wid:
+            del self.a[0]
+        self.a.append(float(stdindata))
+        self.repaint()
     def StarRefresh(self):
         #--config timer 1
-        self.timer1 = QtCore.QTimer()
-        self.timer1.timeout.connect(self.TimerISR)
-        self.timer1.start(100)
+        #self.timer1 = QtCore.QTimer()
+        #self.timer1.timeout.connect(self.TimerISR)
+        #self.timer1.start(100)
         #--config timer refresh
         self.timer_refresh = QtCore.QTimer()
         self.timer_refresh.timeout.connect(self.RefreshTimerISR)
         self.timer_refresh.start(20)
+        #---thread start
+        self.workerth.start()
 
     def CreateTriggerPoly(self, x, y):
         a = QtGui.QPolygon([
@@ -199,8 +211,21 @@ class PyScope(QtGui.QWidget):
     def RefreshTimerISR(self):
         self.repaint()
     def close(self):
-        self.timer1.stop()
+        #self.timer1.stop()
         self.timer_refresh.stop()
+class Worker(QtCore.QThread):
+    def __init__(self,parent=None):
+        super(Worker,self).__init__(parent)
+        self.working=True
+    def __del__(self):
+        self.working=False
+        self.wait()
+    def run(self):
+        while self.working==True:
+            print 'worker run'
+            a=sys.stdin.readline()
+            self.emit(QtCore.SIGNAL('output(QString)'),a)
+
 if __name__ == "__main__":
     import sys
 
@@ -208,4 +233,3 @@ if __name__ == "__main__":
     clock = PyScopeUI()
     clock.show()
     sys.exit(app.exec_())
-

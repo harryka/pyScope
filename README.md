@@ -5,6 +5,6 @@ I want use pyQt design a pc scope software ,and a open source standard for pc sc
 #Test Case
 ```python outsin.py | python pyscope.py```
 
-#To-do
-##1.Design a Standard text format for transport data from standard I/O to PyScope
-##2.Design some buttons to control basic functions.
+# To-do
+## 1.Design a Standard text format for transport data from standard I/O to PyScope
+## 2.Design some buttons to control basic functions.
